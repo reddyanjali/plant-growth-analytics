@@ -1,0 +1,34 @@
+version: '3.8'
+
+services:
+  plants_db:
+    image: postgres:16
+    container_name: plants_db
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=plants
+    ports:
+      - "5432:5432"
+    volumes:
+      - plants_data:/var/lib/postgresql/data
+      - ./insert.sql:/docker-entrypoint-initdb.d/insert.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  fastapi_app:
+    build: .
+    container_name: fastapi_app
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@plants_db:5432/plants
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/app
+    command: ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+
+volumes:
+  plants_data:
